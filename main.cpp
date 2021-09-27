@@ -2,4 +2,5 @@
 
 int main()
 {
+	std::cout << "na zare";
 }
