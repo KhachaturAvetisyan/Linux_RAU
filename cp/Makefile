@@ -1,4 +1,6 @@
+CC = g++
+
 all: copy.cpp
-	g++ copy.cpp -O3 -o cp
+	$(CC) copy.cpp -o cp
 clean: 
 	rm cp
