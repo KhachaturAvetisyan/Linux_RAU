@@ -1,5 +1,7 @@
+CC = g++
+
 all: rm.cpp
-	g++ rm.cpp -o rm
+	$(CC) rm.cpp -o rm
 
 clean:
 	rm rm
