@@ -3,27 +3,92 @@
 #include <unistd.h>
 #include <string.h>
 #include <sys/wait.h>
+#include <sys/stat.h>
+#include <fcntl.h>
+#include <stdlib.h>
+#include <initializer_list>
+#include <string>
+#include <vector>
+#include <iterator>
 
-#define LOG_ERROR(error_text, error_file) print_error(error_text, error_file, __LINE__, __FILE__)
+#define LR(x, y) LogRecord{x, y}
 
-void print_error(const char* error_text, const char* error_file, int line, const char* file)
+template <typename T>
+struct LogRecord
 {
-    fprintf(stderr, "%s: %s, (line=%i, file=%s) \n%s\n", error_text, error_file, line, file, strerror(errno));
-    exit(EXIT_FAILURE);
+    std::string m_key;
+    T m_value;
+
+    LogRecord(std::string key, T value)
+    : m_key(std::move(key))
+    , m_value(value) {}
+    LogRecord() = delete;
+    LogRecord(const LogRecord&) = default;
+    LogRecord& operator=(const LogRecord&) = default;
+
+    LogRecord(LogRecord&&)  noexcept = default;
+    LogRecord& operator=(LogRecord&&)  noexcept = default;
+    ~LogRecord() = default;
+};
+
+template <typename T>
+std::ostream& operator<<(std::ostream& out, LogRecord<T> logRec)
+{
+    return out << logRec.m_key << "=" << logRec.m_value << "\n";
+}
+
+namespace detail
+{
+    template <typename T>
+    void log_fatal_helper(T&& tail)
+    {
+        std::cerr << tail << "\n";
+        std::cerr << "closing the process: " << getpid() << "\n";
+        exit(1);
+    }
+
+    template <typename T, typename ...Args>
+    void log_fatal_helper(T&& head, Args&&... args)
+    {
+        int errno_bac = errno;
+        std::cerr << head << "\n";
+        log_fatal_helper(args..., strerror(errno));
+    }
+
+}
+
+template <typename ...Args>
+void log_fatal(const std::string& errorMsg, Args&&... args)
+{
+    std::cerr << "count of log records " << sizeof...(Args) << "\n";
+    std::cerr << errorMsg << "\n";
+    (std::cerr << ... << args);
 }
 
 int main(int argc, char const *argv[])
 {
 	if (argc < 2)
-		LOG_ERROR("please enter text", "");
+	{
+        std::cerr << "please enter printing text " << "file: " << __FILE__ << " line: "
+                  << __LINE__ << " desc: " <<  strerror(errno) << "\n";
+        exit(EXIT_FAILURE);
+	}
 
 	int child_process = fork();
 	if (child_process < 0)
-		LOG_ERROR("can't creat new process", "");
+	{
+        std::cerr << "can't creat new process " << "file: " << __FILE__ << " line: "
+                  << __LINE__ << " desc: " <<  strerror(errno) << "\n";
+        exit(EXIT_FAILURE);
+	}
 	else if(child_process == 0)
 	{
 		if(execlp("./B", argv[1], NULL) < 0)
-			LOG_ERROR("can't run file", "./B.cpp");
+			{
+			std::cerr << "can't run file " << "./B " << "file: " << __FILE__ << " line: "
+                  << __LINE__ << " desc: " <<  strerror(errno) << "\n";
+        	exit(EXIT_FAILURE);
+		}
 	}
 	wait(nullptr);
 }
