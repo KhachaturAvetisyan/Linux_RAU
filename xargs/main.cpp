@@ -24,7 +24,7 @@ int main(int argc, char const *argv[])
 	{
 		std::string input;
 
-		while (getline(std::cin, input))
+		while (std::cin >> input)
 		{
 			int process_id = fork();
 			if (process_id < 0)
@@ -36,7 +36,7 @@ int main(int argc, char const *argv[])
 			else if(process_id == 0)
 			{
 				if(execlp(argv[1], argv[1], input.c_str(), NULL) < 0)
-					{
+				{
 					std::cerr << "can't run file " << argv[1] << "file: " << __FILE__ << " line: "
 		                  << __LINE__ << " desc: " <<  strerror(errno) << "\n";
 		        	exit(EXIT_FAILURE);
